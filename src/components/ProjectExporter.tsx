@@ -134,10 +134,19 @@ zipStorePath=wrapper/dists
 
   const gradlewScript = `#!/usr/bin/env sh
 # Mandela Matrix OS Canonical Gradle Wrapper Script
-APP_BASE_NAME=$(basename "$0")
 DIRNAME=$(dirname "$0")
-if [ -z "$DIRNAME" ]; me DIRNAME="." ; fi
-exec "$DIRNAME/gradle/wrapper/gradle-wrapper.jar" "$@" 2>/dev/null || gradle "$@"
+if [ -z "$DIRNAME" ]; then DIRNAME="." ; fi
+
+WRAPPER_JAR="$DIRNAME/gradle/wrapper/gradle-wrapper.jar"
+
+if [ -f "$WRAPPER_JAR" ]; then
+    exec java -classpath "$WRAPPER_JAR" org.gradle.wrapper.GradleWrapperMain "$@"
+elif command -v gradle >/dev/null 2>&1; then
+    exec gradle "$@"
+else
+    echo "Error: Neither Gradle wrapper jar nor gradle command found." >&2
+    exit 1
+fi
 `;
 
   const manifestContent = `<?xml version="1.0" encoding="utf-8"?>
@@ -233,11 +242,9 @@ jobs:
       run: |
         sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-    - name: Bootstrap Gradle Wrapper if missing
+    - name: Ensure Gradle Wrapper JAR Exists
       run: |
-        if [ ! -f "gradlew" ]; then
-          gradle wrapper --gradle-version 8.7
-        fi
+        gradle wrapper --gradle-version 8.7
         chmod +x gradlew
 
     - name: Build Debug & Release APK Binaries

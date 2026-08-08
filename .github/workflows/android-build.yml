@@ -27,11 +27,9 @@ jobs:
       run: |
         sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-    - name: Bootstrap Gradle Wrapper if missing
+    - name: Ensure Gradle Wrapper JAR Exists
       run: |
-        if [ ! -f "gradlew" ]; then
-          gradle wrapper --gradle-version 8.7
-        fi
+        gradle wrapper --gradle-version 8.7
         chmod +x gradlew
 
     - name: Build Debug & Release APK Binaries
