@@ -1,0 +1,64 @@
+{
+  "entities": {
+    "CustomAgent": {
+      "title": "CustomAgent",
+      "description": "User created agent persona",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "systemPrompt": { "type": "string", "maxLength": 2000 },
+        "colorHex": { "type": "string", "maxLength": 10 },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "number" },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "name", "systemPrompt", "colorHex", "isActive", "createdAt", "userId"]
+    },
+    "BuildArtifact": {
+      "title": "BuildArtifact",
+      "description": "Synthesized code artifact",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "taskName": { "type": "string", "maxLength": 200 },
+        "timestamp": { "type": "number" },
+        "modelUsed": { "type": "string", "maxLength": 100 },
+        "isFavorite": { "type": "boolean" },
+        "language": { "type": "string", "maxLength": 50 },
+        "generatedCode": { "type": "string", "maxLength": 50000 },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "taskName", "timestamp", "modelUsed", "isFavorite", "language", "generatedCode", "userId"]
+    },
+    "Skill": {
+      "title": "Skill",
+      "description": "Custom or preset skill module",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 100 },
+        "category": { "type": "string", "maxLength": 50 },
+        "description": { "type": "string", "maxLength": 500 },
+        "promptSnippet": { "type": "string", "maxLength": 2000 },
+        "isActive": { "type": "boolean" },
+        "userId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "title", "category", "description", "promptSnippet", "isActive", "userId"]
+    }
+  },
+  "firestore": {
+    "/customAgents/{agentId}": {
+      "schema": { "$ref": "#/entities/CustomAgent" },
+      "description": "Collection of custom agent personas"
+    },
+    "/artifacts/{artifactId}": {
+      "schema": { "$ref": "#/entities/BuildArtifact" },
+      "description": "Collection of generated code artifacts"
+    },
+    "/skills/{skillId}": {
+      "schema": { "$ref": "#/entities/Skill" },
+      "description": "Collection of user skills"
+    }
+  }
+}

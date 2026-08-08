@@ -1,0 +1,103 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Custom Agent validation
+    function isValidCustomAgent(data) {
+      return data.keys().hasAll(['id', 'name', 'systemPrompt', 'colorHex', 'isActive', 'createdAt', 'userId'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 100
+        && data.systemPrompt is string && data.systemPrompt.size() <= 2000
+        && data.colorHex is string && data.colorHex.size() <= 10
+        && data.isActive is bool
+        && data.createdAt is number
+        && data.userId is string && data.userId.size() <= 128
+        && data.userId == request.auth.uid;
+    }
+
+    // Build Artifact validation
+    function isValidBuildArtifact(data) {
+      return data.keys().hasAll(['id', 'taskName', 'timestamp', 'modelUsed', 'isFavorite', 'language', 'generatedCode', 'userId'])
+        && data.keys().size() == 8
+        && data.id is string && data.id.size() <= 128
+        && data.taskName is string && data.taskName.size() <= 200
+        && data.timestamp is number
+        && data.modelUsed is string && data.modelUsed.size() <= 100
+        && data.isFavorite is bool
+        && data.language is string && data.language.size() <= 50
+        && data.generatedCode is string && data.generatedCode.size() <= 50000
+        && data.userId is string && data.userId.size() <= 128
+        && data.userId == request.auth.uid;
+    }
+
+    // Skill validation
+    function isValidSkill(data) {
+      return data.keys().hasAll(['id', 'title', 'category', 'description', 'promptSnippet', 'isActive', 'userId'])
+        && data.keys().size() == 7
+        && data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 100
+        && data.category is string && data.category.size() <= 50
+        && data.description is string && data.description.size() <= 500
+        && data.promptSnippet is string && data.promptSnippet.size() <= 2000
+        && data.isActive is bool
+        && data.userId is string && data.userId.size() <= 128
+        && data.userId == request.auth.uid;
+    }
+
+    // Custom Agents collection
+    match /customAgents/{agentId} {
+      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(agentId) && isValidCustomAgent(incoming());
+      allow update: if isSignedIn() && isValidId(agentId) && isOwner(existing().userId) && isValidCustomAgent(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(agentId) && isOwner(existing().userId);
+    }
+
+    // Artifacts collection
+    match /artifacts/{artifactId} {
+      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(artifactId) && isValidBuildArtifact(incoming());
+      allow update: if isSignedIn() && isValidId(artifactId) && isOwner(existing().userId) && isValidBuildArtifact(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(artifactId) && isOwner(existing().userId);
+    }
+
+    // Skills collection
+    match /skills/{skillId} {
+      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(skillId) && isValidSkill(incoming());
+      allow update: if isSignedIn() && isValidId(skillId) && isOwner(existing().userId) && isValidSkill(incoming()) && incoming().userId == existing().userId;
+      allow delete: if isSignedIn() && isValidId(skillId) && isOwner(existing().userId);
+    }
+
+    // Connection testing doc
+    match /test/connection {
+      allow read: if true;
+    }
+
+    // Catch-all deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

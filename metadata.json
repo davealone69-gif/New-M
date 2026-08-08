@@ -1,0 +1,6 @@
+{
+  "name": "Mandela Matrix OS",
+  "description": "An AI Workstation featuring a Swarm Orchestrator, Free LLM Hub, Gemini Core Synthesis, Training Centre Skill Library, Manifest Archive, and Matrix Dark Terminal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
