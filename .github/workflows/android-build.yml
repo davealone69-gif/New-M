@@ -27,28 +27,39 @@ jobs:
       run: |
         sdkmanager "platforms;android-35" "build-tools;35.0.0"
 
-    - name: Ensure Gradle Wrapper JAR Exists
+    - name: Determine Project Directory & Ensure Gradle Wrapper
       run: |
+        if [ -d "android-app" ]; then
+          BUILD_DIR="android-app"
+        else
+          BUILD_DIR="."
+        fi
+        echo "BUILD_DIR=$BUILD_DIR" >> $GITHUB_ENV
+        cd $BUILD_DIR
+        rm -f gradlew gradlew.bat
         gradle wrapper --gradle-version 8.7
-        chmod +x gradlew
+        chmod +x ./gradlew
 
     - name: Build Debug & Release APK Binaries
-      run: ./gradlew assembleDebug assembleRelease --no-daemon
+      run: |
+        cd ${{ env.BUILD_DIR }}
+        chmod +x ./gradlew
+        ./gradlew --no-daemon --stacktrace assembleDebug assembleRelease
 
     - name: Verify APK Integrity & Print SHA-256 Hashes
       run: |
         echo "=== VERIFYING APK ARTIFACTS ==="
-        find app/build/outputs/apk/ -name "*.apk" -exec ls -lh {} +
-        find app/build/outputs/apk/ -name "*.apk" -exec sha256sum {} +
+        find ${{ env.BUILD_DIR }}/app/build/outputs/apk/ -name "*.apk" -exec ls -lh {} +
+        find ${{ env.BUILD_DIR }}/app/build/outputs/apk/ -name "*.apk" -exec sha256sum {} +
 
     - name: Upload Release APK Binary
       uses: actions/upload-artifact@v4
       with:
         name: MandelaMatrixOS-Release-APK
-        path: app/build/outputs/apk/release/*.apk
+        path: ${{ env.BUILD_DIR }}/app/build/outputs/apk/release/*.apk
 
     - name: Upload Debug APK Binary
       uses: actions/upload-artifact@v4
       with:
         name: MandelaMatrixOS-Debug-APK
-        path: app/build/outputs/apk/debug/*.apk
+        path: ${{ env.BUILD_DIR }}/app/build/outputs/apk/debug/*.apk
