@@ -1,4 +1,4 @@
-// app/build.gradle.kts - Mandela Matrix 
+// app/build.gradle.kts - Mandela Matrix
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -9,40 +9,28 @@ plugins {
 android {
     namespace = "com.mandela.matrixos"
     compileSdk = 35
-
     defaultConfig {
         applicationId = "com.mandela.matrixos"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "3.8-HYBRID"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        vectorDrawables {
-            useSupportLibrary = true
-        }
+        vectorDrawables { useSupportLibrary = true }
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("debug")
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-    buildFeatures {
-        compose = true
-    }
+    kotlinOptions { jvmTarget = "17" }
+    buildFeatures { compose = true }
 }
 
 dependencies {
@@ -53,16 +41,12 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
-
-    // Room Database - Local Persistence
+    implementation("androidx.webkit:webkit:1.12.1")
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     kapt("androidx.room:room-compiler:2.6.1")
-
-    // Generative AI SDK & Networking
     implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
-
