@@ -1,33 +1,23 @@
 package com.mandela.matrixos
 
+import android.annotation.SuppressLint
+import android.app.Activity
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import android.webkit.WebView
+import android.webkit.WebViewClient
 
-class MainActivity : ComponentActivity() {
+class MainActivity : Activity() {
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            MandelaMatrixOSApp()
+        val webView = WebView(this).apply {
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.allowFileAccess = true
+            settings.allowContentAccess = true
+            webViewClient = WebViewClient()
+            loadUrl("file:///android_asset/www/index.html")
         }
-    }
-}
-
-@Composable
-fun MandelaMatrixOSApp() {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFF0D0208)
-    ) {
-        Text(
-            text = "MANDELA MATRIX OS ONLINE - KOTLIN COMPOSE SDK 35",
-            color = Color(0xFF00FF41)
-        )
+        setContentView(webView)
     }
 }
