@@ -5,41 +5,41 @@ export const FREE_MODELS_REGISTRY: FreeModel[] = [
     id: 'gemini-3.6-flash',
     name: 'Gemini 3.6 Flash (Core Brain)',
     provider: 'Gemini',
-    description: 'Google DeepMind fast reasoning & multimodal engine for matrix synthesis.',
+    description: 'Google Gemini 3.6 Flash fast reasoning and multimodal engine.',
     isOfflineCapable: false
   },
   {
     id: 'gemini-3.1-pro-preview',
     name: 'Gemini 3.1 Pro (Deep Architect)',
     provider: 'Gemini',
-    description: 'Advanced reasoning and complex system architecture design.',
+    description: 'Advanced Gemini reasoning for complex architecture and coding.',
     isOfflineCapable: false
   },
   {
-    id: 'llama3-70b-8192',
-    name: 'Groq Llama 3 (70B Fast)',
+    id: 'openai/gpt-oss-20b',
+    name: 'Groq GPT-OSS 20B',
     provider: 'Groq',
     baseUrl: 'https://api.groq.com/openai/v1/',
     apiEnvKey: 'GROQ_API_KEY',
-    description: 'Ultra-high-speed inference engine delivering 300+ tokens/sec.',
+    description: 'Fast open-weight reasoning model hosted by Groq.',
     isOfflineCapable: false
   },
   {
-    id: 'llama3-8b-8192',
-    name: 'Groq Llama 3 (8B)',
+    id: 'openai/gpt-oss-120b',
+    name: 'Groq GPT-OSS 120B',
     provider: 'Groq',
     baseUrl: 'https://api.groq.com/openai/v1/',
     apiEnvKey: 'GROQ_API_KEY',
-    description: 'Lightweight high-speed Llama 3 model for rapid iteration.',
+    description: 'Large open-weight reasoning model hosted by Groq.',
     isOfflineCapable: false
   },
   {
-    id: 'gemma2-9b-it',
-    name: 'Groq Gemma 2 (9B)',
+    id: 'qwen/qwen3.6-27b',
+    name: 'Groq Qwen 3.6 27B',
     provider: 'Groq',
     baseUrl: 'https://api.groq.com/openai/v1/',
     apiEnvKey: 'GROQ_API_KEY',
-    description: 'Google open weights Gemma 2 model running at high speed.',
+    description: 'Qwen 3.6 27B hosted on Groq for coding and reasoning.',
     isOfflineCapable: false
   },
   {
@@ -48,23 +48,23 @@ export const FREE_MODELS_REGISTRY: FreeModel[] = [
     provider: 'OpenRouter',
     baseUrl: 'https://openrouter.ai/api/v1/',
     apiEnvKey: 'OPENROUTER_API_KEY',
-    description: 'Zero-cost dynamic router connecting to available open LLM models.',
+    description: 'OpenRouter free-model router. Availability is provider-controlled.',
     isOfflineCapable: false
   },
   {
     id: 'HuggingFaceH4/zephyr-7b-beta',
     name: 'Zephyr 7B Beta (Hugging Face)',
     provider: 'Hugging Face',
-    baseUrl: 'https://api-inference.huggingface.co/v1/',
+    baseUrl: 'https://router.huggingface.co/v1/',
     apiEnvKey: 'HF_TOKEN',
-    description: 'Community-tuned open assistant model hosted on Hugging Face.',
+    description: 'Hugging Face hosted chat model through the OpenAI-compatible router.',
     isOfflineCapable: false
   },
   {
     id: 'local-gemma-2b-quantized',
-    name: 'Local Offline Gemma 2B (MediaPipe Engine)',
+    name: 'Local Offline Gemma 2B (On-Device)',
     provider: 'Local Offline',
-    description: 'Runs on-device without internet connection. Total privacy and zero latency.',
+    description: 'Reserved for a real on-device inference engine. No simulated responses.',
     isOfflineCapable: true
   }
 ];
