@@ -1,13 +1,22 @@
 const STORAGE_KEY = 'mandela_matrix_api_base_url';
+const ANDROID_LOCAL_BACKEND = 'http://127.0.0.1:3000';
 
 function normalizeBaseUrl(value: string) {
   return value.trim().replace(/\/+$/, '');
 }
 
 export function getApiBaseUrl(): string {
-  const saved = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
+  if (typeof window !== 'undefined') {
+    const saved = window.localStorage.getItem(STORAGE_KEY);
+    if (saved) return normalizeBaseUrl(saved);
+
+    if (window.location.hostname === 'appassets.androidplatform.net') {
+      return ANDROID_LOCAL_BACKEND;
+    }
+  }
+
   const configured = import.meta.env.VITE_API_BASE_URL as string | undefined;
-  return normalizeBaseUrl(saved || configured || '');
+  return normalizeBaseUrl(configured || '');
 }
 
 export function setApiBaseUrl(value: string) {
