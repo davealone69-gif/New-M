@@ -25,7 +25,7 @@ class TermuxBridge(private val context: Context) {
                     "com.termux.RUN_COMMAND_ARGUMENTS",
                     arrayOf(
                         "-lc",
-                        "set -e; cd \"$HOME\"; if [ ! -d New-M ]; then git clone https://github.com/davealone69-gif/New-M.git; fi; cd ~/New-M; npm install --no-audit --no-fund; nohup npm run dev > ~/.mandela-matrix.log 2>&1 &"
+                        "set -e; cd \"${'$'}HOME\"; if [ ! -d New-M ]; then git clone https://github.com/davealone69-gif/New-M.git; fi; cd ~/New-M; npm install --no-audit --no-fund; nohup npm run dev > ~/.mandela-matrix.log 2>&1 &"
                     )
                 )
                 putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
