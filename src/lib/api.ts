@@ -9,12 +9,8 @@ export function getApiBaseUrl(): string {
   if (typeof window !== 'undefined') {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (saved) return normalizeBaseUrl(saved);
-
-    if (window.location.hostname === 'appassets.androidplatform.net') {
-      return ANDROID_LOCAL_BACKEND;
-    }
+    if (window.location.hostname === 'appassets.androidplatform.net') return ANDROID_LOCAL_BACKEND;
   }
-
   const configured = import.meta.env.VITE_API_BASE_URL as string | undefined;
   return normalizeBaseUrl(configured || '');
 }
@@ -34,8 +30,37 @@ export function apiUrl(path: string): string {
   return base ? `${base}${normalizedPath}` : normalizedPath;
 }
 
+let termuxStartAttempted = false;
+let termuxStartPromise: Promise<boolean> | null = null;
+
+async function tryStartTermuxBackend() {
+  if (termuxStartAttempted || typeof window === 'undefined') return false;
+  termuxStartAttempted = true;
+  const native = (window as any).MatrixNative;
+  if (!native || typeof native.isInstalled !== 'function' || typeof native.startBackend !== 'function') return false;
+  try {
+    if (!native.isInstalled()) return false;
+    if (termuxStartPromise) return termuxStartPromise;
+    termuxStartPromise = Promise.resolve(Boolean(native.startBackend()));
+    return await termuxStartPromise;
+  } catch {
+    return false;
+  }
+}
+
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
-  return fetch(apiUrl(path), init);
+  const url = apiUrl(path);
+  try {
+    return await fetch(url, init);
+  } catch (firstError) {
+    const isAndroid = typeof window !== 'undefined' && window.location.hostname === 'appassets.androidplatform.net';
+    const isLocal = url.startsWith(ANDROID_LOCAL_BACKEND);
+    if (!isAndroid || !isLocal) throw firstError;
+    const started = await tryStartTermuxBackend();
+    if (!started) throw new Error(`Local builder backend is unreachable at ${ANDROID_LOCAL_BACKEND}. Install/allow Termux or set another API URL in Settings.`);
+    await new Promise((resolve) => setTimeout(resolve, 1800));
+    return fetch(url, init);
+  }
 }
 
 export async function checkBackend(): Promise<{ ok: boolean; data?: any; error?: string }> {
