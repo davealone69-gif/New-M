@@ -11,6 +11,7 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebSettings
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.webkit.WebViewAssetLoader
@@ -44,6 +45,7 @@ class MainActivity : android.app.Activity() {
             settings.allowContentAccess = false
             settings.loadsImagesAutomatically = true
             settings.javaScriptCanOpenWindowsAutomatically = true
+            settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
             addJavascriptInterface(TermuxBridge(this@MainActivity), "MatrixNative")
