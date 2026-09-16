@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -33,10 +33,48 @@ function fixedProjectFiles(mainActivity: string): GeneratedFile[] {
 }
 
 async function writeProject(root: string, files: GeneratedFile[]) {
-  for (const file of files) { const relative = safeRelativeFile(file.path); const target = path.join(root, relative); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, file.content, 'utf8'); }
+  for (const file of files) {
+    const relative = safeRelativeFile(file.path);
+    const target = path.join(root, relative);
+    await mkdir(path.dirname(target), { recursive: true });
+    await writeFile(target, file.content, 'utf8');
+  }
 }
-async function toolAvailable(command: string, args: string[] = ['--version']) { try { await execFileAsync(command, args, { timeout: 15000 }); return true; } catch { return false; } }
-async function findGradle(root: string) { const wrapper = path.join(root, 'gradlew'); if (existsSync(wrapper)) return wrapper; if (await toolAvailable('gradle')) return 'gradle'; return null; }
+
+async function installRepoGradleWrapper(root: string) {
+  const repoRoot = process.cwd();
+  const wrapperScript = path.join(repoRoot, 'gradlew');
+  const wrapperJar = path.join(repoRoot, 'gradle', 'wrapper', 'gradle-wrapper.jar');
+  const wrapperProps = path.join(repoRoot, 'gradle', 'wrapper', 'gradle-wrapper.properties');
+  if (!existsSync(wrapperScript) || !existsSync(wrapperJar) || !existsSync(wrapperProps)) return false;
+  await copyFile(wrapperScript, path.join(root, 'gradlew'));
+  await chmod(path.join(root, 'gradlew'), 0o755);
+  await mkdir(path.join(root, 'gradle', 'wrapper'), { recursive: true });
+  await copyFile(wrapperJar, path.join(root, 'gradle', 'wrapper', 'gradle-wrapper.jar'));
+  await copyFile(wrapperProps, path.join(root, 'gradle', 'wrapper', 'gradle-wrapper.properties'));
+  return true;
+}
+
+async function toolAvailable(command: string, args: string[] = ['--version']) {
+  try { await execFileAsync(command, args, { timeout: 15000 }); return true; } catch { return false; }
+}
+
+async function findGradle(root: string) {
+  const wrapper = path.join(root, 'gradlew');
+  if (existsSync(wrapper)) return wrapper;
+  if (await toolAvailable('gradle')) return 'gradle';
+  return null;
+}
+
+function findSdk() {
+  const candidates = [
+    process.env.ANDROID_SDK_ROOT,
+    process.env.ANDROID_HOME,
+    path.join(os.homedir(), 'android-sdk'),
+    path.join(os.homedir(), 'Android', 'Sdk'),
+  ].filter(Boolean) as string[];
+  return candidates.find((candidate) => existsSync(candidate)) || null;
+}
 
 export async function buildAndroidApp(generated: { mainActivity: string; extraFiles?: GeneratedFile[] }): Promise<BuildResult> {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -46,14 +84,20 @@ export async function buildAndroidApp(generated: { mainActivity: string; extraFi
   let logs = '';
   try {
     const java = await toolAvailable(process.env.JAVA_BIN || 'java');
-    const sdk = process.env.ANDROID_SDK_ROOT || process.env.ANDROID_HOME;
-    if (!java) return { id, status: 'unavailable', message: 'Java runtime is unavailable. Install/configure Java 17 for the local builder.', logs };
-    if (!sdk || !existsSync(sdk)) return { id, status: 'unavailable', message: 'Android SDK is unavailable. Set ANDROID_SDK_ROOT or ANDROID_HOME to an installed Android SDK.', logs };
+    const sdk = findSdk();
+    if (!java) return { id, status: 'unavailable', message: 'Java runtime is unavailable. Install a JDK in Termux.', logs };
+    if (!sdk) return { id, status: 'unavailable', message: 'Android SDK is unavailable. Expected ANDROID_SDK_ROOT, ANDROID_HOME, ~/android-sdk, or ~/Android/Sdk.', logs };
     await writeProject(root, [...fixedProjectFiles(generated.mainActivity), ...(generated.extraFiles || [])]);
+    await installRepoGradleWrapper(root);
     const gradle = await findGradle(root);
-    if (!gradle) return { id, status: 'unavailable', message: 'Gradle is unavailable. Install Gradle or provide a valid Gradle wrapper in the build environment.', logs };
+    if (!gradle) return { id, status: 'unavailable', message: 'Gradle wrapper is missing and no system Gradle is installed.', logs };
     try {
-      const result = await execFileAsync(gradle, ['--no-daemon', '--stacktrace', 'assembleDebug'], { cwd: root, env: { ...process.env, ANDROID_SDK_ROOT: sdk, ANDROID_HOME: sdk }, timeout: Number(process.env.MANDELA_BUILD_TIMEOUT_MS || 900000), maxBuffer: 20 * 1024 * 1024 });
+      const result = await execFileAsync(gradle, ['--no-daemon', '--stacktrace', 'assembleDebug'], {
+        cwd: root,
+        env: { ...process.env, ANDROID_SDK_ROOT: sdk, ANDROID_HOME: sdk },
+        timeout: Number(process.env.MANDELA_BUILD_TIMEOUT_MS || 900000),
+        maxBuffer: 20 * 1024 * 1024,
+      });
       logs = `${result.stdout}\n${result.stderr}`.slice(-200000);
     } catch (error: any) {
       logs = `${error?.stdout || ''}\n${error?.stderr || ''}\n${error?.message || error}`.slice(-200000);
@@ -67,6 +111,8 @@ export async function buildAndroidApp(generated: { mainActivity: string; extraFi
     await mkdir(finalDir, { recursive: true });
     const finalApk = path.join(finalDir, 'app-debug.apk');
     await writeFile(finalApk, apk);
-    return { id, status: 'success', message: 'Android APK built and verified on the configured local build engine.', apkPath: finalApk, sha256, logs };
-  } finally { await rm(root, { recursive: true, force: true }).catch(() => undefined); }
+    return { id, status: 'success', message: 'Android APK built and SHA-256 verified by the local build engine.', apkPath: finalApk, sha256, logs };
+  } finally {
+    await rm(root, { recursive: true, force: true }).catch(() => undefined);
+  }
 }
