@@ -18,16 +18,31 @@ class TermuxBridge(private val context: Context) {
     fun startBackend(): Boolean {
         if (!isInstalled()) return false
         return try {
+            val command = """
+                set -u
+                cd \"$HOME\"
+                if [ ! -d New-M/.git ]; then
+                  rm -rf New-M
+                  git clone https://github.com/davealone69-gif/New-M.git New-M
+                else
+                  cd New-M
+                  git fetch origin main || true
+                  git reset --hard origin/main || true
+                  cd ..
+                fi
+                cd \"$HOME/New-M\"
+                command -v node >/dev/null 2>&1 || exit 20
+                command -v npm >/dev/null 2>&1 || exit 21
+                if [ ! -d node_modules ]; then npm install --no-audit --no-fund || exit 22; fi
+                pkill -f 'tsx server.ts' 2>/dev/null || true
+                nohup npm run dev > \"$HOME/.mandela-matrix.log\" 2>&1 < /dev/null &
+                echo $! > \"$HOME/.mandela-matrix.pid\"
+            """.trimIndent()
+
             val intent = Intent("com.termux.RUN_COMMAND").apply {
                 setClassName("com.termux", "com.termux.app.RunCommandService")
                 putExtra("com.termux.RUN_COMMAND_PATH", "/data/data/com.termux/files/usr/bin/bash")
-                putExtra(
-                    "com.termux.RUN_COMMAND_ARGUMENTS",
-                    arrayOf(
-                        "-lc",
-                        "set -e; cd \"${'$'}HOME\"; if [ ! -d New-M ]; then git clone https://github.com/davealone69-gif/New-M.git; fi; cd ~/New-M; npm install --no-audit --no-fund; nohup npm run dev > ~/.mandela-matrix.log 2>&1 &"
-                    )
-                )
+                putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf("-lc", command))
                 putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
             }
             context.startService(intent)
