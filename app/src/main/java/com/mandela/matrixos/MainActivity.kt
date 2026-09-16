@@ -19,7 +19,7 @@ class MainActivity : android.app.Activity() {
     private lateinit var webView: WebView
     private lateinit var errorView: TextView
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -46,21 +46,14 @@ class MainActivity : android.app.Activity() {
             settings.javaScriptCanOpenWindowsAutomatically = true
             CookieManager.getInstance().setAcceptCookie(true)
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            addJavascriptInterface(TermuxBridge(this@MainActivity), "MatrixNative")
 
             webViewClient = object : WebViewClient() {
-                override fun shouldInterceptRequest(
-                    view: WebView,
-                    request: WebResourceRequest
-                ) = assetLoader.shouldInterceptRequest(request.url)
+                override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest) =
+                    assetLoader.shouldInterceptRequest(request.url)
 
-                override fun onReceivedError(
-                    view: WebView,
-                    request: WebResourceRequest,
-                    error: WebResourceError
-                ) {
-                    if (request.isForMainFrame) {
-                        showError("Matrix UI failed to load.\n\n${error.description}\nURL: ${request.url}")
-                    }
+                override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                    if (request.isForMainFrame) showError("Matrix UI failed to load.\n\n${error.description}\nURL: ${request.url}")
                     super.onReceivedError(view, request, error)
                 }
             }
@@ -73,37 +66,22 @@ class MainActivity : android.app.Activity() {
                     return true
                 }
             }
-
-            // WebViewAssetLoader gives the packaged React app a real HTTPS origin.
             loadUrl("https://appassets.androidplatform.net/assets/www/index.html")
         }
 
         val root = FrameLayout(this).apply {
-            addView(webView, FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            ))
-            addView(errorView, FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            ))
+            addView(webView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            addView(errorView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         }
         setContentView(root)
     }
 
     private fun showError(message: String) {
-        runOnUiThread {
-            errorView.text = message
-            errorView.visibility = TextView.VISIBLE
-        }
+        runOnUiThread { errorView.text = message; errorView.visibility = TextView.VISIBLE }
     }
 
     @Deprecated("Deprecated in Android API")
     override fun onBackPressed() {
-        if (::webView.isInitialized && webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
+        if (::webView.isInitialized && webView.canGoBack()) webView.goBack() else super.onBackPressed()
     }
 }
