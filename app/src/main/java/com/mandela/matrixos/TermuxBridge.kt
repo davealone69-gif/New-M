@@ -20,23 +20,24 @@ class TermuxBridge(private val context: Context) {
         return try {
             val command = """
                 set -u
-                cd \"$HOME\"
+                export ANDROID_SDK_ROOT=\"${'$'}HOME/android-sdk\"
+                export ANDROID_HOME=\"${'$'}HOME/android-sdk\"
+                cd \"${'$'}HOME\"
                 if [ ! -d New-M/.git ]; then
                   rm -rf New-M
                   git clone https://github.com/davealone69-gif/New-M.git New-M
                 else
                   cd New-M
-                  git fetch origin main || true
-                  git reset --hard origin/main || true
+                  git pull --ff-only origin main || true
                   cd ..
                 fi
-                cd \"$HOME/New-M\"
+                cd \"${'$'}HOME/New-M\"
                 command -v node >/dev/null 2>&1 || exit 20
                 command -v npm >/dev/null 2>&1 || exit 21
                 if [ ! -d node_modules ]; then npm install --no-audit --no-fund || exit 22; fi
                 pkill -f 'tsx server.ts' 2>/dev/null || true
-                nohup npm run dev > \"$HOME/.mandela-matrix.log\" 2>&1 < /dev/null &
-                echo $! > \"$HOME/.mandela-matrix.pid\"
+                nohup npm run dev > \"${'$'}HOME/.mandela-matrix.log\" 2>&1 < /dev/null &
+                echo ${'$'}! > \"${'$'}HOME/.mandela-matrix.pid\"
             """.trimIndent()
 
             val intent = Intent("com.termux.RUN_COMMAND").apply {
