@@ -33,6 +33,17 @@ export function apiUrl(path: string): string {
 let termuxStartAttempted = false;
 let termuxStartPromise: Promise<boolean> | null = null;
 
+async function backendReady(): Promise<boolean> {
+  try {
+    const response = await fetch(`${ANDROID_LOCAL_BACKEND}/api/health`, { method: 'GET', cache: 'no-store' });
+    if (!response.ok) return false;
+    const data = await response.json().catch(() => ({}));
+    return data.status === 'online';
+  } catch {
+    return false;
+  }
+}
+
 async function tryStartTermuxBackend() {
   if (termuxStartAttempted || typeof window === 'undefined') return false;
   termuxStartAttempted = true;
@@ -41,7 +52,15 @@ async function tryStartTermuxBackend() {
   try {
     if (!native.isInstalled()) return false;
     if (termuxStartPromise) return termuxStartPromise;
-    termuxStartPromise = Promise.resolve(Boolean(native.startBackend()));
+    termuxStartPromise = (async () => {
+      if (await backendReady()) return true;
+      if (!Boolean(native.startBackend())) return false;
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (await backendReady()) return true;
+      }
+      return false;
+    })();
     return await termuxStartPromise;
   } catch {
     return false;
@@ -57,15 +76,16 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
     const isLocal = url.startsWith(ANDROID_LOCAL_BACKEND);
     if (!isAndroid || !isLocal) throw firstError;
     const started = await tryStartTermuxBackend();
-    if (!started) throw new Error(`Local builder backend is unreachable at ${ANDROID_LOCAL_BACKEND}. Install/allow Termux or set another API URL in Settings.`);
-    await new Promise((resolve) => setTimeout(resolve, 1800));
+    if (!started) {
+      throw new Error(`Local Termux build backend did not become ready at ${ANDROID_LOCAL_BACKEND}. Install Termux, enable its external-command permission, and ensure Node.js/npm are installed.`);
+    }
     return fetch(url, init);
   }
 }
 
 export async function checkBackend(): Promise<{ ok: boolean; data?: any; error?: string }> {
   try {
-    const response = await apiFetch('/api/health', { method: 'GET' });
+    const response = await apiFetch('/api/health', { method: 'GET', cache: 'no-store' });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) return { ok: false, error: data.error || `HTTP ${response.status}` };
     return { ok: data.status === 'online', data };
