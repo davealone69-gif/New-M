@@ -26,15 +26,18 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew lint test assembleDebug --continue --stacktrace --console=plain
-      - name: Node audit and test
+      - name: Set up Bun
+        if: ${{ hashFiles('package.json') != '' }}
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install and verify frontend
         if: ${{ hashFiles('package.json') != '' }}
         shell: bash
         run: |
-          npm ci --ignore-scripts
-          npm audit --audit-level=high || true
-          npm run test --if-present
-          npm run lint --if-present
-          npm run build --if-present
+          bun install --frozen-lockfile
+          bun run lint
+          bun run build
       - name: Python syntax audit
         if: ${{ hashFiles('**/*.py') != '' }}
         shell: bash
