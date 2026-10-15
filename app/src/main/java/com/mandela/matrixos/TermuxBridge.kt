@@ -17,6 +17,7 @@ class TermuxBridge(private val context: Context) {
     @JavascriptInterface
     fun startBackend(): Boolean {
         if (!isInstalled()) return false
+        if (context.checkSelfPermission("com.termux.permission.RUN_COMMAND") != PackageManager.PERMISSION_GRANTED) return false
         return try {
             val command = """
                 set -u
@@ -46,8 +47,7 @@ class TermuxBridge(private val context: Context) {
                 putExtra("com.termux.RUN_COMMAND_ARGUMENTS", arrayOf("-lc", command))
                 putExtra("com.termux.RUN_COMMAND_BACKGROUND", true)
             }
-            context.startService(intent)
-            true
+            context.startService(intent) != null
         } catch (_: Exception) {
             false
         }
